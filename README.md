@@ -10,6 +10,8 @@ Funziona su telefono, tablet e computer.
 - Righe per anno, “Aggiunti di recente”, **“Continua a guardare”** (riprende da dove avevi lasciato), ricerca
 - Modifica ed eliminazione dei video (il file su Drive non viene mai toccato)
 
+> 👉 **Per configurare tutto da zero segui la [GUIDA passo passo](GUIDA.md).**
+
 **Tecnologie:** React + Vite (frontend), Node.js + Express (backend). Nessun database: l'elenco dei video è un semplice file JSON.
 
 ---
