@@ -11,7 +11,7 @@ export default function Hero({ video, onPlay, onInfo }) {
       </div>
       <div className="hero-content">
         <div className="hero-tag">In evidenza</div>
-        <h1 className="hero-title">{video.title}</h1>
+        <h1 className={`hero-title ${video.title.length > 26 ? 'hero-title-long' : ''}`}>{video.title}</h1>
         <div className="meta">
           <span className="meta-year">{video.year}</span>
           {video.durationMs ? <span>{formatDuration(video.durationMs / 1000)}</span> : null}

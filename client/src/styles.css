@@ -359,3 +359,22 @@ a { color: inherit; }
   .splash, .page-center, .login-page { min-height: 100dvh; }
   .player { height: 100dvh; }
 }
+
+/* ---------- Banner in evidenza su PC e tablet in orizzontale ----------
+   Il testo segue il flusso della pagina: un titolo lungo allunga il banner
+   invece di salire fino al logo. */
+@media (min-width: 801px) and (min-height: 501px) {
+  .hero {
+    height: auto;
+    min-height: min(85vh, 56.25vw + 120px);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 130px var(--gutter) calc(8vw + 6vh);
+  }
+  .hero-content { position: relative; left: auto; bottom: auto; width: min(680px, 55vw); gap: 1rem; }
+  .hero-tag { margin-bottom: 0.2rem; }
+  .hero-title { font-size: clamp(2.8rem, 4.8vw, 5rem); line-height: 1; }
+  .hero-title-long { font-size: clamp(2.3rem, 3.5vw, 3.8rem); }
+  .hero-title {
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+}
