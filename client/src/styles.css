@@ -80,7 +80,10 @@ a { color: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------- Login ---------- */
-.login-page { min-height: 100vh; position: relative; display: flex; flex-direction: column; }
+.login-page {
+  min-height: 100vh; position: relative; display: flex; align-items: center; justify-content: center;
+  padding: 100px 16px;
+}
 .login-backdrop {
   position: fixed; inset: 0; z-index: -1;
   background:
@@ -89,11 +92,11 @@ a { color: inherit; }
     repeating-linear-gradient(90deg, rgba(255,255,255,0.025) 0 2px, transparent 2px 160px),
     var(--bg);
 }
-.login-header { padding: 1.5rem var(--gutter); }
+.login-header { position: absolute; top: 0; left: 0; padding: 1.5rem var(--gutter); }
 .login-box {
-  margin: auto; width: min(420px, calc(100% - 32px)); background: rgba(0, 0, 0, 0.72);
+  width: min(420px, 100%); background: rgba(0, 0, 0, 0.72);
   border-radius: 12px; padding: 3rem 2.5rem; display: flex; flex-direction: column; gap: 1rem;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); margin-bottom: 15vh;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
 }
 .login-box h1 { margin: 0; font-size: 2rem; }
 .login-box p { margin: 0 0 0.5rem; }
@@ -317,6 +320,7 @@ a { color: inherit; }
   .hero-buttons .btn-lg { padding: 0.65rem 1.1rem; font-size: 1rem; }
   .grid { grid-template-columns: repeat(2, 1fr); gap: 1.2rem 0.5rem; }
   .login-box { padding: 2rem 1.4rem; }
+  .login-box h1 { font-size: clamp(1.45rem, 7vw, 1.8rem); white-space: nowrap; }
   .details-head { left: 1.2rem; right: 1.2rem; }
   .details-body { padding: 0.5rem 1.2rem 1.8rem; }
   .video-form { padding: 1.6rem 1.2rem; }
