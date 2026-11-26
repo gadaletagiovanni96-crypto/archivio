@@ -280,6 +280,11 @@ a { color: inherit; }
 }
 .player-error h3 { margin: 0 0 0.5rem; font-size: 1.6rem; }
 .player-error p { color: var(--muted); line-height: 1.5; }
+.player-error-details {
+  text-align: left; font-family: ui-monospace, Consolas, monospace; font-size: 0.78rem; color: #fca5a5;
+  background: rgba(0, 0, 0, 0.35); border-radius: 6px; padding: 0.7rem 0.9rem 0.7rem 1.6rem; margin: 0 0 1.2rem;
+  word-break: break-word; max-height: 160px; overflow: auto;
+}
 
 .footer { text-align: center; padding: 2rem var(--gutter) 3rem; font-size: 0.85rem; }
 

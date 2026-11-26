@@ -68,6 +68,45 @@ export default function Player({ video, onClose }) {
     }
   }
 
+  async function diagnose() {
+    const mediaError = ref.current?.error;
+    const code = mediaError ? ` (codice ${mediaError.code}${mediaError.message ? `: ${mediaError.message}` : ''})` : '';
+    try {
+      const res = await fetch(streamUrl(video), { headers: { Range: 'bytes=0-63' } });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError({
+          title: 'Google Drive non ha consegnato il video',
+          text:
+            res.status === 401
+              ? 'La sessione è scaduta: ricarica la pagina ed entra di nuovo.'
+              : 'Il file non è scaricabile. Controlla che sia condiviso con “Chiunque abbia il link” e che il ' +
+                'proprietario non abbia disattivato l’opzione per scaricare.',
+          details: data.details || [data.error || `Errore ${res.status}`],
+        });
+        return;
+      }
+      const head = new Uint8Array(await res.arrayBuffer());
+      const brand = new TextDecoder().decode(head.slice(8, 12));
+      const isMov = brand === 'qt  ';
+      setError({
+        title: 'Il browser non riesce a leggere questo video',
+        text:
+          'Il file arriva correttamente da Drive, ma il formato non è supportato da questo browser' +
+          (isMov
+            ? '. È un file .MOV, probabilmente registrato con iPhone in formato HEVC: prova ad aprirlo con Safari o con un altro dispositivo, oppure convertilo in MP4 (H.264) con HandBrake.'
+            : '. Prova con un altro browser (Chrome, Safari) oppure convertilo in MP4 (H.264) con HandBrake.'),
+        details: [`Tipo file: ${video.mimeType || 'sconosciuto'}${brand.trim() ? ` · formato “${brand.trim()}”` : ''}${code}`],
+      });
+    } catch {
+      setError({
+        title: 'Connessione non riuscita',
+        text: 'Il server non risponde. Controlla la connessione o che il sito sia acceso, poi riprova.',
+        details: [],
+      });
+    }
+  }
+
   function restart() {
     ref.current.currentTime = 0;
     clearProgress(video.id);
@@ -95,10 +134,8 @@ export default function Player({ video, onClose }) {
         }}
         onError={() => {
           setLoading(false);
-          setError(
-            'Impossibile riprodurre il video. Controlla che su Google Drive sia condiviso con “Chiunque abbia il link” ' +
-              'e che il formato sia compatibile con il browser (MP4 consigliato).'
-          );
+          setError({ title: 'Controllo in corso…', text: 'Sto cercando di capire perché il video non parte.', details: [] });
+          diagnose();
         }}
       />
 
@@ -127,8 +164,15 @@ export default function Player({ video, onClose }) {
 
       {error && (
         <div className="player-error">
-          <h3>Ops!</h3>
-          <p>{error}</p>
+          <h3>{error.title}</h3>
+          <p>{error.text}</p>
+          {error.details?.length > 0 && (
+            <ul className="player-error-details">
+              {error.details.map((d) => (
+                <li key={d}>{d}</li>
+              ))}
+            </ul>
+          )}
           <button className="btn btn-light" onClick={close}>
             Torna all'archivio
           </button>

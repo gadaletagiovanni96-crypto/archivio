@@ -41,11 +41,27 @@ export async function getDriveMetadata(fileId) {
   return res.json();
 }
 
-function mediaUrl(fileId) {
+function mediaSources(fileId) {
   const key = API_KEY();
-  if (key) return `${API}/${fileId}?alt=media&supportsAllDrives=true&acknowledgeAbuse=true&key=${key}`;
-  // Senza chiave API: download diretto (funziona per i file pubblici, meno affidabile)
-  return `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+  const sources = [];
+  if (key) sources.push({ name: 'Drive API', url: `${API}/${fileId}?alt=media&supportsAllDrives=true&key=${key}` });
+  // Alternativa senza chiave: download diretto dei file pubblici
+  sources.push({
+    name: 'download diretto',
+    url: `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`,
+  });
+  return sources;
+}
+
+function describeGoogleError(text) {
+  try {
+    const json = JSON.parse(text);
+    const e = json.error || {};
+    const reason = e.errors?.[0]?.reason || e.status || '';
+    return [reason, e.message].filter(Boolean).join(': ');
+  } catch {
+    return text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+  }
 }
 
 /** Inoltra lo stream del video da Google Drive al browser, supportando le richieste "Range". */
@@ -56,43 +72,51 @@ export async function streamDriveFile(req, res, fileId) {
   const headers = {};
   if (req.headers.range) headers.Range = req.headers.range;
 
-  let upstream;
-  try {
-    upstream = await fetch(mediaUrl(fileId), { headers, signal: controller.signal, redirect: 'follow' });
-  } catch (err) {
-    if (controller.signal.aborted) return;
-    console.error('Errore stream Drive:', err.message);
-    return res.status(502).json({ error: 'Impossibile contattare Google Drive' });
+  const failures = [];
+  for (const source of mediaSources(fileId)) {
+    let upstream;
+    try {
+      upstream = await fetch(source.url, { headers, signal: controller.signal, redirect: 'follow' });
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      failures.push(`${source.name}: ${err.message}`);
+      continue;
+    }
+
+    const type = upstream.headers.get('content-type') || '';
+    if (upstream.status === 416) {
+      upstream.body?.cancel();
+      return res.status(416).end();
+    }
+    if (!upstream.ok || type.includes('text/html') || type.includes('application/json')) {
+      const detail = describeGoogleError(await upstream.text().catch(() => ''));
+      failures.push(`${source.name} (${upstream.status}): ${detail || 'risposta non valida'}`);
+      continue;
+    }
+
+    res.status(upstream.status);
+    for (const h of ['content-length', 'content-range', 'accept-ranges', 'last-modified', 'etag']) {
+      const v = upstream.headers.get(h);
+      if (v) res.setHeader(h, v);
+    }
+    if (!upstream.headers.get('accept-ranges')) res.setHeader('Accept-Ranges', 'bytes');
+    // I file .mov (H.264) vengono riprodotti dai browser se dichiarati come mp4
+    const playableType =
+      !type || type.includes('octet-stream') || type.includes('quicktime') ? 'video/mp4' : type;
+    res.setHeader('Content-Type', playableType);
+    res.setHeader('Cache-Control', 'private, max-age=0');
+
+    Readable.fromWeb(upstream.body)
+      .on('error', () => res.destroy())
+      .pipe(res);
+    return;
   }
 
-  const type = upstream.headers.get('content-type') || '';
-  const isError = !upstream.ok || type.includes('text/html') || type.includes('application/json');
-  if (isError) {
-    const detail = await upstream.text().catch(() => '');
-    console.error(`Stream Drive fallito (${upstream.status}) per ${fileId}: ${detail.slice(0, 300)}`);
-    const status = upstream.status === 416 ? 416 : upstream.status === 404 ? 404 : 502;
-    return res.status(status).json({
-      error:
-        'Google Drive non ha restituito il video. Verifica che sia condiviso con "Chiunque abbia il link" ' +
-        'e che la GOOGLE_API_KEY sia configurata.',
-    });
-  }
-
-  res.status(upstream.status);
-  for (const h of ['content-length', 'content-range', 'accept-ranges', 'last-modified', 'etag']) {
-    const v = upstream.headers.get(h);
-    if (v) res.setHeader(h, v);
-  }
-  if (!upstream.headers.get('accept-ranges')) res.setHeader('Accept-Ranges', 'bytes');
-  // I file .mov (H.264) vengono riprodotti dai browser se dichiarati come mp4
-  const playableType =
-    !type || type.includes('octet-stream') || type.includes('quicktime') ? 'video/mp4' : type;
-  res.setHeader('Content-Type', playableType);
-  res.setHeader('Cache-Control', 'private, max-age=0');
-
-  Readable.fromWeb(upstream.body)
-    .on('error', () => res.destroy())
-    .pipe(res);
+  console.error(`Stream Drive fallito per ${fileId}:\n  - ${failures.join('\n  - ')}`);
+  res.status(502).json({
+    error: 'Google Drive non ha restituito il video.',
+    details: failures,
+  });
 }
 
 // --- Copertine ---------------------------------------------------------------
