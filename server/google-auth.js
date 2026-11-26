@@ -16,19 +16,63 @@ let credentials;
 let tokenPromise = null;
 let token = { value: null, expires: 0 };
 
+function parseCredentials(text) {
+  const json = JSON.parse(text);
+  if (!json.client_email || !json.private_key) throw new Error('nel file mancano "client_email" o "private_key"');
+  return json;
+}
+
+/** Cerca un file .json di account di servizio nelle cartelle dei file segreti (es. Render). */
+function findCredentialFile() {
+  const dirs = ['/etc/secrets', process.cwd()];
+  for (const dir of dirs) {
+    let names = [];
+    try {
+      names = fs.readdirSync(dir).filter((n) => n.endsWith('.json') && !n.startsWith('package'));
+    } catch {
+      continue;
+    }
+    for (const name of names) {
+      const file = path.join(dir, name);
+      try {
+        const json = parseCredentials(fs.readFileSync(file, 'utf8'));
+        if (json.type === 'service_account' || json.client_email.endsWith('.gserviceaccount.com')) return file;
+      } catch {
+        /* non è un file di account di servizio */
+      }
+    }
+  }
+  return null;
+}
+
 function loadCredentials() {
   if (credentials !== undefined) return credentials;
   credentials = null;
-  const file = process.env.GOOGLE_SERVICE_ACCOUNT_FILE?.trim();
+  const configured = process.env.GOOGLE_SERVICE_ACCOUNT_FILE?.trim();
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT?.trim();
-  if (!file && !raw) return null;
   try {
-    let text;
-    if (file) text = fs.readFileSync(path.resolve(file), 'utf8');
-    else text = raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
-    const json = JSON.parse(text);
-    if (!json.client_email || !json.private_key) throw new Error('nel file mancano "client_email" o "private_key"');
-    credentials = json;
+    if (raw) {
+      credentials = parseCredentials(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'));
+      return credentials;
+    }
+    let file = configured ? path.resolve(configured) : null;
+    if (!file || !fs.existsSync(file)) {
+      const found = findCredentialFile();
+      if (configured && !found) {
+        let secrets = '';
+        try {
+          secrets = fs.readdirSync('/etc/secrets').join(', ');
+        } catch {
+          /* cartella assente */
+        }
+        throw new Error(
+          `il file "${configured}" non esiste` + (secrets ? ` (file segreti presenti: ${secrets})` : ' e non ci sono file segreti')
+        );
+      }
+      if (found && configured) console.warn(`⚠ "${configured}" non trovato: uso l'account di servizio in ${found}`);
+      file = found;
+    }
+    if (file) credentials = parseCredentials(fs.readFileSync(file, 'utf8'));
   } catch (err) {
     console.error(`✖ Account di servizio Google non valido: ${err.message}`);
   }
