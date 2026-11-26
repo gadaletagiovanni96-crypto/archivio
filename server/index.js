@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import { createAuth } from './auth.js';
 import { createCatalog } from './storage.js';
 import { probeDriveVideo } from './probe.js';
-import { extractDriveId, forgetCover, getDriveCover, getDriveMetadata, streamDriveFile } from './drive.js';
+import { describeAccessMode, extractDriveId, forgetCover, getDriveCover, getDriveMetadata, streamDriveFile } from './drive.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT) || 3001;
@@ -21,9 +21,7 @@ if (!PASSWORD) {
 if (!process.env.SESSION_SECRET) {
   console.warn('⚠ SESSION_SECRET non impostata: ne uso una derivata dalla password (consigliato impostarla).');
 }
-if (!process.env.GOOGLE_API_KEY) {
-  console.warn('⚠ GOOGLE_API_KEY non impostata: lo streaming userà il download diretto di Drive (meno affidabile).');
-}
+console.log(`Accesso a Google Drive: ${describeAccessMode()}`);
 
 const auth = createAuth({ password: PASSWORD, secret: process.env.SESSION_SECRET || `archivio:${PASSWORD}` });
 const catalog = await createCatalog({ rootDir });

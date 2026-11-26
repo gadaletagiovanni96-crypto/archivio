@@ -9,7 +9,7 @@ Seguila nell'ordine: ogni parte usa qualcosa preparato in quella prima.
 |---|---|---|
 | 1 | Installi i programmi sul computer | 15 min |
 | 2 | Prepari i video su Google Drive (ognuno dal proprio account) | 5 min a persona |
-| 3 | Crei la chiave API di Google | 10 min |
+| 3 | Crei la chiave API e l'account di servizio di Google | 20 min |
 | 4 | Crei il "Gist" dove viene salvato l'elenco dei video | 5 min |
 | 5 | Provi il sito sul tuo computer con VS Code | 10 min |
 | 6 | Lo metti online su Render | 15 min |
@@ -18,6 +18,7 @@ Seguila nell'ordine: ogni parte usa qualcosa preparato in quella prima.
 > 📝 **Tieni aperto un file di appunti** (Blocco note, Note…). Durante la guida copierai 4 valori
 > che servono più avanti: **password di famiglia**, **chiave Google**, **token GitHub**, **ID del Gist**.
 > Non condividerli con nessuno fuori dalla famiglia e non pubblicarli su internet.
+> Ti servirà anche un **file `.json`** (Parte 3B): conservalo con cura.
 
 ---
 
@@ -62,6 +63,10 @@ Ogni membro della famiglia, **dal proprio account**:
 5. Clicca **Fine**.
 
 Tutti i video dentro la cartella, anche quelli aggiunti in futuro, diventano accessibili col link.
+
+6. **Importante:** condividi la cartella anche con l'**indirizzo dell'account di servizio** che creerai nella
+   **Parte 3B** (finisce con `.iam.gserviceaccount.com`). Le istruzioni sono lì: se stai leggendo per la
+   prima volta, fai prima la Parte 3B e poi torna qui.
 
 ### Prendere il link di un singolo video
 
@@ -121,6 +126,50 @@ basta una sola chiave, che crei tu, perché i video sono condivisi pubblicamente
 
 ---
 
+## Parte 3B — L'account di servizio (indispensabile per il sito online)
+
+**Perché serve.** Quando il sito è su Render, Google vede le richieste arrivare da un server "cloud" e,
+se sono anonime (solo con la chiave API), dopo un po' le blocca con messaggi come
+*"Sorry… your computer or network may be sending automated queries"* o *"Quota exceeded"*.
+Un **account di servizio** è un "utente robot" del tuo progetto Google: il sito si presenta a Google con
+questa identità e le richieste non vengono più bloccate. È gratuito.
+
+### 3B.1 Creare l'account di servizio
+
+1. Vai su <https://console.cloud.google.com/> e controlla in alto che sia selezionato il progetto **archivio-gadaleta**.
+2. Menu ☰ → **IAM e amministrazione** → **Account di servizio**.
+3. In alto **+ Crea account di servizio**.
+4. **Nome account di servizio:** `archivio-video` → **Crea e continua**.
+5. Il passaggio "Autorizzazioni" (ruoli) **non serve**: clicca **Continua** e poi **Fine**.
+6. Nella lista compare il nuovo account con un indirizzo email simile a
+   `archivio-video@archivio-gadaleta.iam.gserviceaccount.com` (la parte centrale può avere dei numeri).
+   **Copia questo indirizzo negli appunti.**
+
+### 3B.2 Scaricare la chiave (file .json)
+
+1. Clicca sull'indirizzo dell'account appena creato → scheda **Chiavi**.
+2. **Aggiungi chiave** → **Crea nuova chiave** → scegli **JSON** → **Crea**.
+3. Il browser scarica un file `.json` (nome tipo `archivio-gadaleta-1a2b3c….json`).
+   **Conservalo con cura e non mandarlo a nessuno**: è come una password.
+
+> Se Google mostra *"La creazione della chiave dell'account di servizio è disattivata"*, il progetto è
+> sotto un'organizzazione con regole restrittive: scrivimi e troviamo un'alternativa.
+
+### 3B.3 Condividere le cartelle dei video con l'account di servizio
+
+Ogni membro della famiglia, **dal proprio account Google**, per la propria cartella dei video:
+
+1. Tasto destro sulla cartella → **Condividi** → **Condividi**.
+2. Nel campo "Aggiungi persone…" incolla l'indirizzo dell'account di servizio (quello che finisce con `.iam.gserviceaccount.com`).
+3. Ruolo: **Visualizzatore**. Togli la spunta da **"Invia notifica"**.
+4. **Condividi** (se Google avvisa che l'indirizzo è esterno, conferma con **Condividi comunque**).
+
+Basta farlo una volta per cartella: anche i video aggiunti dopo saranno visibili al sito.
+
+> Manda l'indirizzo dell'account di servizio ai familiari via WhatsApp o email: **solo l'indirizzo**, mai il file `.json`.
+
+---
+
 ## Parte 4 — Il Gist (dove viene salvato l'elenco dei video)
 
 Il sito non usa un database: l'elenco dei video (titolo, anno, link) è un piccolo file.
@@ -173,7 +222,13 @@ Attendi la fine (1-2 minuti). Qualche "warning" giallo è normale; l'importante 
 > nel terminale clicca la freccina accanto al **+** in alto a destra, scegli **Command Prompt**
 > e ripeti il comando lì.
 
-### 5c. Creare il file `.env` con le impostazioni
+### 5c. Mettere il file dell'account di servizio nel progetto
+
+Prendi il file `.json` scaricato nella Parte 3B, **trascinalo nella colonna a sinistra di VS Code**
+(nella cartella principale del progetto, accanto a `package.json`) e rinominalo esattamente
+**`service-account.json`**. Il progetto è già impostato per non caricarlo mai su GitHub.
+
+### 5d. Creare il file `.env` con le impostazioni
 
 1. Nella colonna a sinistra di VS Code trovi il file **`.env.example`**.
    Tasto destro → **Copia**, poi tasto destro nello spazio vuoto → **Incolla**: ottieni `.env copy.example`.
@@ -184,6 +239,7 @@ Attendi la fine (1-2 minuti). Qualche "warning" giallo è normale; l'importante 
 FAMILY_PASSWORD=la-password-che-darai-alla-famiglia
 SESSION_SECRET=una-frase-lunga-e-a-caso-tipo-pizza-mare-1998-zio-nino
 GOOGLE_API_KEY=AIza...la-tua-chiave
+GOOGLE_SERVICE_ACCOUNT_FILE=service-account.json
 GITHUB_TOKEN=ghp_...il-tuo-token
 GIST_ID=8f3a1c2b9d...
 PORT=3001
@@ -194,13 +250,14 @@ PORT=3001
 > Il file `.env` resta solo sul tuo computer: il progetto è già impostato per non caricarlo mai su GitHub.
 > Inserendo anche `GITHUB_TOKEN` e `GIST_ID`, i video che aggiungi in prova compariranno anche sul sito online.
 
-### 5d. Avviare
+### 5e. Avviare
 
 ```bash
 npm run dev
 ```
 
-Quando nel terminale compare `✔ Archivio Gadaleta in ascolto` e un indirizzo `Local: http://localhost:5173/`:
+Quando nel terminale compare `✔ Archivio Gadaleta in ascolto` e un indirizzo `Local: http://localhost:5173/`
+(controlla anche che ci sia la riga **`Accesso a Google Drive: account di servizio (…)`**):
 
 1. Apri il browser su **<http://localhost:5173>**
 2. Inserisci la password di famiglia → **Entra**.
@@ -252,11 +309,21 @@ Se qualcosa non va, guarda la sezione **Problemi comuni** in fondo.
    | `GOOGLE_API_KEY` | la chiave Google |
    | `GITHUB_TOKEN` | il token GitHub |
    | `GIST_ID` | l'ID del Gist |
+   | `GOOGLE_SERVICE_ACCOUNT_FILE` | `/etc/secrets/service-account.json` |
    | `NODE_VERSION` | `22` |
+
+   Poi, nella stessa pagina, sezione **Secret Files** → **+ Add Secret File**:
+   - **Filename:** `service-account.json`
+   - **Contents:** apri il file `.json` della Parte 3B con il Blocco note, seleziona tutto (`Ctrl+A`), copia e incolla qui.
 
 6. Apri **Advanced** e in **Health Check Path** scrivi `/healthz`.
 7. Clicca **Deploy Web Service**. Nel log vedrai la costruzione del sito: dopo 3-5 minuti compare **"Your service is live 🎉"**.
-8. In alto c'è l'indirizzo, del tipo **`https://archivio-gadaleta.onrender.com`**. Aprilo, entra con la password e controlla che ci siano i video aggiunti in prova.
+8. Nei **Logs** di Render deve comparire la riga `Accesso a Google Drive: account di servizio (…)`.
+   Se invece dice "chiave API", il file segreto o la variabile `GOOGLE_SERVICE_ACCOUNT_FILE` non sono corretti.
+9. In alto c'è l'indirizzo, del tipo **`https://archivio-gadaleta.onrender.com`**. Aprilo, entra con la password e controlla che ci siano i video aggiunti in prova.
+
+> **Hai già creato il servizio su Render?** Vai sul servizio → **Environment**: aggiungi la variabile
+> `GOOGLE_SERVICE_ACCOUNT_FILE` e il Secret File come sopra → **Save changes**. Render ripubblica da solo.
 
 **Da sapere sul piano gratuito**
 
@@ -276,7 +343,7 @@ Mandate a tutti l'indirizzo `https://archivio-gadaleta.onrender.com` e la passwo
 - **Android (Chrome):** apri il sito → menu ⋮ → **Aggiungi a schermata Home**.
 
 ### Aggiungere un nuovo video (anche da telefono)
-1. Chi possiede il video lo carica nella sua cartella Drive già condivisa (o condivide il singolo file con "Chiunque abbia il link").
+1. Chi possiede il video lo carica nella sua cartella Drive già condivisa con l'account di servizio.
 2. Copia il link del video.
 3. Sul sito: **+** → titolo, anno, link → **Aggiungi**.
 
@@ -297,7 +364,9 @@ Da Chrome sul computer: menu ⋮ → **Trasmetti** per mandarlo a un Chromecast;
 
 | Problema | Soluzione |
 |---|---|
-| Aggiungendo un video: *"File non trovato o non accessibile"* | Il video non è condiviso con "Chiunque abbia il link", oppure è un account di lavoro/scuola che lo vieta. Ricontrolla la Parte 2. |
+| Aggiungendo un video: *"File non trovato o non accessibile"* | La cartella del video non è condivisa con l'indirizzo dell'account di servizio (Parte 3B.3). |
+| Nei log: *"Sorry… automated queries"* o *"Quota exceeded"* | Il sito sta usando l'accesso anonimo: l'account di servizio non è configurato (Parte 3B e Parte 6) oppure la cartella non è condivisa con il suo indirizzo. *"Quota exceeded"* su un file si azzera da solo entro 24 ore. |
+| Nei log: *"accesso dell'account di servizio rifiutato"* | Il file `.json` è stato copiato male o la chiave è stata eliminata: creane una nuova (Parte 3B.2). |
 | Aggiungendo un video: *"Google Drive ha risposto con errore 403"* | La chiave Google non è valida, la Google Drive API non è abilitata, oppure nelle limitazioni della chiave manca "Google Drive API". Ricontrolla la Parte 3. |
 | Aggiungendo un video: *"non sembra un video"* | Hai copiato il link di una cartella o di un'immagine. Serve il link del singolo video. |
 | Il video non parte (*"Impossibile riprodurre"*) | Controlla la condivisione. Se un video funziona e un altro no, è quasi sempre il formato: convertilo in MP4 (vedi "Formato dei video"). |
@@ -320,3 +389,5 @@ Da Chrome sul computer: menu ⋮ → **Trasmetti** per mandarlo a un Chromecast;
 | Chiave Google (`AIza…`) | Parte 3 | `.env` e Render → `GOOGLE_API_KEY` |
 | Token GitHub (`ghp_…`) | Parte 4b | `.env` e Render → `GITHUB_TOKEN` |
 | ID del Gist | Parte 4a | `.env` e Render → `GIST_ID` |
+| File `.json` account di servizio | Parte 3B.2 | `service-account.json` nel progetto e Render → Secret Files |
+| Indirizzo account di servizio | Parte 3B.1 | Da condividere con i familiari per le cartelle Drive |

@@ -61,7 +61,7 @@ export default function VideoForm({ video, onClose, onSave }) {
             required
           />
           <small className="hint">
-            Su Drive: tasto destro sul video → <b>Condividi</b> → “Chiunque abbia il link” → <b>Copia link</b>.
+            La cartella su Drive deve essere condivisa con l'account di servizio del sito. Poi: tasto destro sul video → <b>Condividi</b> → <b>Copia link</b>.
           </small>
         </label>
 

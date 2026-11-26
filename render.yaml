@@ -15,6 +15,8 @@ services:
         generateValue: true
       - key: GOOGLE_API_KEY
         sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_FILE
+        value: /etc/secrets/service-account.json
       - key: GITHUB_TOKEN
         sync: false
       - key: GIST_ID
