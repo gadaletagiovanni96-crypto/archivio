@@ -108,9 +108,14 @@ basta una sola chiave, che crei tu, perché i video sono condivisi pubblicamente
 4. **Crea la chiave:** menu ☰ in alto a sinistra → **API e servizi** → **Credenziali**
    → in alto **+ Crea credenziali** → **Chiave API**.
 5. Compare la chiave (inizia con `AIza…`). **Copiala nei tuoi appunti** come *chiave Google*.
-6. **Proteggi la chiave (consigliato):** nella lista delle chiavi clicca sul nome della chiave appena creata
-   → sezione **Limitazioni API** → scegli **Limita chiave** → nel menu spunta solo **Google Drive API**
-   → **Salva**. Lascia "Limitazioni delle applicazioni" su **Nessuna**.
+6. **Proteggi la chiave (consigliato):** nella lista delle chiavi clicca sul nome della chiave appena creata.
+   Si apre la pagina **"Modifica chiave API"**:
+   - nella sezione **"API accessibili utilizzando questa chiave"**, nel menu **"Seleziona limitazioni dell'API"**,
+     spunta solo **Google Drive API**. Sotto "API selezionate" deve comparire **Google Drive API**;
+   - il riquadro blu che parla di "Service account" **non ti riguarda**: ignoralo;
+   - in **"Restrizioni delle applicazioni"** lascia **Nessuna**. Non scegliere "Siti web" né "Indirizzi IP",
+     altrimenti il server non riesce a usare la chiave. Il riquadro giallo di avviso puoi ignorarlo;
+   - premi **Salva**. Le modifiche possono impiegare fino a 5 minuti per diventare attive.
 
 > La chiave resta solo sul server: non viene mai mostrata nel sito né salvata su GitHub.
 
