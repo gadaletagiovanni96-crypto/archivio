@@ -7,6 +7,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import { createAuth } from './auth.js';
 import { createCatalog } from './storage.js';
+import { probeDriveVideo } from './probe.js';
 import { extractDriveId, forgetCover, getDriveCover, getDriveMetadata, streamDriveFile } from './drive.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -171,6 +172,19 @@ app.get(
     const video = catalog.get(req.params.id);
     if (!video) return res.status(404).json({ error: 'Video non trovato' });
     await streamDriveFile(req, res, video.driveId);
+  })
+);
+
+app.get(
+  '/api/videos/:id/probe',
+  asyncRoute(async (req, res) => {
+    const video = catalog.get(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Video non trovato' });
+    try {
+      res.json(await probeDriveVideo(video.driveId));
+    } catch (err) {
+      res.json({ verdict: 'unknown', message: err.message });
+    }
   })
 );
 

@@ -86,8 +86,12 @@ export default function Player({ video, onClose }) {
         });
         return;
       }
-      const head = new Uint8Array(await res.arrayBuffer());
+      const reader = res.body.getReader();
+      const { value = new Uint8Array() } = await reader.read();
+      reader.cancel().catch(() => {});
+      const head = value.slice(0, 64);
       const brand = new TextDecoder().decode(head.slice(8, 12));
+      const probe = await fetch(`/api/videos/${video.id}/probe`).then((r) => r.json()).catch(() => null);
       const isMov = brand === 'qt  ';
       setError({
         title: 'Il browser non riesce a leggere questo video',
@@ -96,7 +100,13 @@ export default function Player({ video, onClose }) {
           (isMov
             ? '. È un file .MOV, probabilmente registrato con iPhone in formato HEVC: prova ad aprirlo con Safari o con un altro dispositivo, oppure convertilo in MP4 (H.264) con HandBrake.'
             : '. Prova con un altro browser (Chrome, Safari) oppure convertilo in MP4 (H.264) con HandBrake.'),
-        details: [`Tipo file: ${video.mimeType || 'sconosciuto'}${brand.trim() ? ` · formato “${brand.trim()}”` : ''}${code}`],
+        details: [
+          `Tipo file: ${video.mimeType || 'sconosciuto'}${brand.trim() ? ` · formato “${brand.trim()}”` : ''}${code}`,
+          ...(probe?.video ? [`Video: ${probe.video.name} (${probe.video.codec})`] : []),
+          ...(probe?.audio ? [`Audio: ${probe.audio.name} (${probe.audio.codec})`] : []),
+          ...(probe?.message ? [probe.message] : []),
+          ...(res.status === 200 ? ['Il server ha ricevuto il file intero invece di una parte: lo streaming non supporta lo spostamento nel video.'] : []),
+        ],
       });
     } catch {
       setError({

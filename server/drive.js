@@ -44,7 +44,7 @@ export async function getDriveMetadata(fileId) {
 function mediaSources(fileId) {
   const key = API_KEY();
   const sources = [];
-  if (key) sources.push({ name: 'Drive API', url: `${API}/${fileId}?alt=media&supportsAllDrives=true&key=${key}` });
+  if (key) sources.push({ name: 'Drive API', url: `${API}/${fileId}?alt=media&supportsAllDrives=true&acknowledgeAbuse=true&key=${key}` });
   // Alternativa senza chiave: download diretto dei file pubblici
   sources.push({
     name: 'download diretto',
@@ -94,6 +94,9 @@ export async function streamDriveFile(req, res, fileId) {
       continue;
     }
 
+    if (failures.length) {
+      console.warn(`Avviso: per ${fileId} uso "${source.name}" perché: ${failures.join(' | ')}`);
+    }
     res.status(upstream.status);
     for (const h of ['content-length', 'content-range', 'accept-ranges', 'last-modified', 'etag']) {
       const v = upstream.headers.get(h);
@@ -117,6 +120,28 @@ export async function streamDriveFile(req, res, fileId) {
     error: 'Google Drive non ha restituito il video.',
     details: failures,
   });
+}
+
+/** Scarica un intervallo di byte del file (per analizzarne il formato). */
+export async function fetchDriveRange(fileId, start, end) {
+  const failures = [];
+  for (const source of mediaSources(fileId)) {
+    try {
+      const res = await fetch(source.url, { headers: { Range: `bytes=${start}-${end}` }, redirect: 'follow' });
+      const type = res.headers.get('content-type') || '';
+      if (!res.ok || type.includes('text/html') || type.includes('application/json')) {
+        failures.push(`${source.name} (${res.status})`);
+        await res.body?.cancel();
+        continue;
+      }
+      const buffer = Buffer.from(await res.arrayBuffer());
+      const total = Number((res.headers.get('content-range') || '').split('/')[1]) || null;
+      return { buffer, total, partial: res.status === 206 };
+    } catch (err) {
+      failures.push(`${source.name}: ${err.message}`);
+    }
+  }
+  throw new Error(`Impossibile leggere il file: ${failures.join('; ')}`);
 }
 
 // --- Copertine ---------------------------------------------------------------
