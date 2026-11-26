@@ -27,7 +27,7 @@ export default function Login({ onLogin }) {
         <Logo size="lg" />
       </header>
       <form className="login-box" onSubmit={submit}>
-        <h1>Bentornati a casa</h1>
+        <h1>Bentornati, Gadaleta</h1>
         <p className="muted">Inserisci la password di famiglia per guardare i vostri ricordi.</p>
         <input
           type="password"

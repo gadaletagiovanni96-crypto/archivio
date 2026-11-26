@@ -31,7 +31,7 @@ a { color: inherit; }
 /* ---------- Logo ---------- */
 .logo { display: inline-flex; flex-direction: column; line-height: 0.85; user-select: none; }
 .logo-main { font-family: var(--display); color: var(--accent); font-size: 2rem; letter-spacing: 0.06em; }
-.logo-sub { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.42em; color: var(--muted); padding-left: 2px; }
+.logo-sub { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.28em; color: var(--muted); padding-left: 2px; }
 .logo-lg .logo-main { font-size: 3.2rem; }
 .logo-lg .logo-sub { font-size: 0.9rem; }
 

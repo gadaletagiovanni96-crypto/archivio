@@ -202,7 +202,7 @@ export default function App() {
         </>
       )}
 
-      <footer className="footer muted">I ricordi di famiglia, sempre a portata di click.</footer>
+      <footer className="footer muted">Famiglia Gadaleta · i nostri ricordi, sempre a portata di click.</footer>
 
       {details && (
         <DetailsModal

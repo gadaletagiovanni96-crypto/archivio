@@ -1,6 +1,6 @@
-# 🎬 Archivio di Famiglia
+# 🎬 Archivio Gadaleta
 
-Web app in stile piattaforma di streaming per guardare i video di famiglia salvati su Google Drive.
+Web app in stile piattaforma di streaming per guardare i video della famiglia Gadaleta salvati su Google Drive.
 Funziona su telefono, tablet e computer.
 
 - Accesso con **una sola password** di famiglia
