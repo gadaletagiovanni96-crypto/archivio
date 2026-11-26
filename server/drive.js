@@ -64,13 +64,29 @@ function describeGoogleError(text) {
   }
 }
 
-/** Inoltra lo stream del video da Google Drive al browser, supportando le richieste "Range". */
+const CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB per richiesta a Google
+
+/**
+ * Trasforma la richiesta del browser (di solito "dal byte X fino alla fine")
+ * in una richiesta di un pezzo limitato: Google la gestisce molto meglio e il
+ * browser chiede da solo il pezzo successivo quando serve.
+ */
+function boundedRange(header) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec((header || '').trim());
+  if (!m) return `bytes=0-${CHUNK_SIZE - 1}`;
+  if (m[1] === '') return header; // ultimi N byte: lascia com'è
+  const start = Number(m[1]);
+  const maxEnd = start + CHUNK_SIZE - 1;
+  const end = m[2] === '' ? maxEnd : Math.min(Number(m[2]), maxEnd);
+  return `bytes=${start}-${end}`;
+}
+
+/** Inoltra lo stream del video da Google Drive al browser, a pezzi, supportando le richieste "Range". */
 export async function streamDriveFile(req, res, fileId) {
   const controller = new AbortController();
   res.on('close', () => controller.abort());
 
-  const headers = {};
-  if (req.headers.range) headers.Range = req.headers.range;
+  const headers = { Range: boundedRange(req.headers.range) };
 
   const failures = [];
   for (const source of mediaSources(fileId)) {
