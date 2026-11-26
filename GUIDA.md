@@ -327,7 +327,16 @@ Se qualcosa non va, guarda la sezione **Problemi comuni** in fondo.
 
 **Da sapere sul piano gratuito**
 
-- Se nessuno lo apre per 15 minuti, il sito "si addormenta": la prima apertura dopo una pausa richiede **30-60 secondi**. Poi è veloce.
+- Se nessuno lo apre per 15 minuti, il sito "si addormenta" e la prima apertura richiede **30-60 secondi**.
+  Per evitarlo il progetto **lo tiene sveglio da solo**, in due modi:
+  1. il server visita il proprio indirizzo ogni 10 minuti (funziona in automatico su Render);
+  2. un job di **GitHub Actions** (file `.github/workflows/keep-awake.yml`) lo visita ogni 10 minuti
+     e lo risveglia se si è addormentato. Controllalo su GitHub → repository `archivio` → scheda **Actions**
+     → "Tieni sveglio il sito". Se è disattivato clicca **Enable workflow**; con **Run workflow** lo provi subito.
+     GitHub a volte ritarda i job pianificati di qualche minuto: è normale. Se il repository resta
+     60 giorni senza modifiche, GitHub sospende il job: basta riattivarlo dalla stessa pagina.
+  Il piano gratuito include 750 ore al mese: bastano per **un** sito acceso 24 ore su 24.
+  Se crei altri servizi gratuiti su Render, le ore si dividono tra loro.
 - I video passano attraverso il server. Il piano gratuito include una quota mensile di traffico che basta per un uso familiare normale.
 - Se un giorno vuoi cambiare password: Render → il tuo servizio → **Environment** → modifica `FAMILY_PASSWORD` → **Save changes**. Il sito si riavvia e tutti dovranno rientrare con la nuova password.
 

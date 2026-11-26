@@ -224,4 +224,21 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`✔ Archivio Gadaleta in ascolto su http://localhost:${PORT}`);
+  startKeepAwake();
 });
+
+/**
+ * Su Render (piano gratuito) il sito si addormenta dopo 15 minuti senza visite.
+ * Finché è acceso, il server visita da solo il proprio indirizzo pubblico ogni 10 minuti.
+ * Render imposta RENDER_EXTERNAL_URL in automatico; KEEP_AWAKE=false per disattivare.
+ */
+function startKeepAwake() {
+  const url = process.env.KEEP_AWAKE_URL || process.env.RENDER_EXTERNAL_URL;
+  if (!url || process.env.KEEP_AWAKE === 'false') return;
+  const ping = () =>
+    fetch(`${url.replace(/\/$/, '')}/healthz`, { signal: AbortSignal.timeout(30_000) }).catch((err) =>
+      console.warn(`Auto-ping non riuscito: ${err.message}`)
+    );
+  setInterval(ping, 10 * 60 * 1000).unref();
+  console.log(`Auto-ping attivo ogni 10 minuti su ${url}`);
+}
