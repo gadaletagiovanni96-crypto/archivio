@@ -337,7 +337,12 @@ Se qualcosa non va, guarda la sezione **Problemi comuni** in fondo.
      60 giorni senza modifiche, GitHub sospende il job: basta riattivarlo dalla stessa pagina.
   Il piano gratuito include 750 ore al mese: bastano per **un** sito acceso 24 ore su 24.
   Se crei altri servizi gratuiti su Render, le ore si dividono tra loro.
-- I video passano attraverso il server. Il piano gratuito include una quota mensile di traffico che basta per un uso familiare normale.
+- **Traffico:** il piano gratuito di Render include solo **5 GB al mese**. Per questo i video **non passano dal server**:
+  il browser li scarica direttamente da Google con un permesso temporaneo (1 ora, sola lettura, rinnovato in automatico).
+  Su Render passano solo le pagine e le copertine, pochi MB al mese.
+  Se un giorno Render sospende il sito per il traffico ("Workspace suspended"), il limite si azzera all'inizio del mese
+  successivo; in alternativa si può aggiungere una carta (0,15 $ per GB oltre i 5 GB).
+- Non impostare la variabile `STREAM_MODE=proxy` su Render: farebbe passare i video dal server, consumando subito i 5 GB.
 - Se un giorno vuoi cambiare password: Render → il tuo servizio → **Environment** → modifica `FAMILY_PASSWORD` → **Save changes**. Il sito si riavvia e tutti dovranno rientrare con la nuova password.
 
 ---

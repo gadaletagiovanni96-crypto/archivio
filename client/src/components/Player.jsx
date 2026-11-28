@@ -11,6 +11,36 @@ export default function Player({ video, onClose }) {
   const [resumedAt, setResumedAt] = useState(null);
   const [chrome, setChrome] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [source, setSource] = useState(null); // { url, mode: 'direct' | 'proxy' }
+  const resumeAt = useRef(null); // punto da cui ripartire dopo il rinnovo del permesso
+  const retries = useRef(0);
+
+  const loadSource = useCallback(async (fresh = false) => {
+    try {
+      const res = await fetch(`/api/videos/${video.id}/source${fresh ? '?fresh=1' : ''}`);
+      if (!res.ok) throw new Error(res.status === 401 ? 'sessione' : `errore ${res.status}`);
+      setSource({ ...(await res.json()), loadedAt: Date.now() });
+    } catch (err) {
+      setLoading(false);
+      setError({
+        title: err.message === 'sessione' ? 'Sessione scaduta' : 'Connessione non riuscita',
+        text:
+          err.message === 'sessione'
+            ? 'Ricarica la pagina ed entra di nuovo con la password.'
+            : 'Il server non risponde. Controlla la connessione o che il sito sia acceso, poi riprova.',
+        details: [],
+      });
+    }
+  }, [video.id]);
+
+  useEffect(() => {
+    loadSource();
+  }, [loadSource]);
+
+  // Dopo un rinnovo il browser deve ricaricare il video anche se l'indirizzo è identico
+  useEffect(() => {
+    if (source && retries.current > 0) ref.current?.load();
+  }, [source]);
 
   const close = useCallback(() => {
     const el = ref.current;
@@ -51,6 +81,13 @@ export default function Player({ video, onClose }) {
 
   function onLoadedMetadata() {
     const el = ref.current;
+    if (resumeAt.current !== null) {
+      // Ripresa dopo il rinnovo automatico del permesso di Google
+      el.currentTime = resumeAt.current;
+      resumeAt.current = null;
+      el.play().catch(() => {});
+      return;
+    }
     const p = getProgress(video.id);
     if (p && p.time > 5 && p.time < el.duration - 15) {
       el.currentTime = p.time;
@@ -93,6 +130,16 @@ export default function Player({ video, onClose }) {
       const brand = new TextDecoder().decode(head.slice(8, 12));
       const probe = await fetch(`/api/videos/${video.id}/probe`).then((r) => r.json()).catch(() => null);
       const isMov = brand === 'qt  ';
+      if (source?.mode === 'direct' && probe?.verdict === 'ok') {
+        setError({
+          title: 'Google non ha consegnato il video al browser',
+          text:
+            'Il file è compatibile e il server riesce a leggerlo, ma il tuo browser non è riuscito a scaricarlo ' +
+            'direttamente da Google. Riprova tra qualche minuto; se succede con tutti i video, segnalalo.',
+          details: [`Video: ${probe.video?.name || '?'} · Audio: ${probe.audio?.name || '?'}${code}`],
+        });
+        return;
+      }
       setError({
         title: 'Il browser non riesce a leggere questo video',
         text:
@@ -127,7 +174,7 @@ export default function Player({ video, onClose }) {
     <div className={`player ${chrome ? '' : 'player-idle'}`} onMouseMove={poke} onTouchStart={poke}>
       <video
         ref={ref}
-        src={streamUrl(video)}
+        src={source?.url}
         controls
         autoPlay
         playsInline
@@ -135,7 +182,10 @@ export default function Player({ video, onClose }) {
         onLoadedMetadata={onLoadedMetadata}
         onTimeUpdate={onTimeUpdate}
         onWaiting={() => setLoading(true)}
-        onPlaying={() => setLoading(false)}
+        onPlaying={() => {
+          setLoading(false);
+          retries.current = 0;
+        }}
         onCanPlay={() => setLoading(false)}
         onPause={poke}
         onEnded={() => {
@@ -143,6 +193,16 @@ export default function Player({ video, onClose }) {
           setChrome(true);
         }}
         onError={() => {
+          const el = ref.current;
+          if (!source?.url) return;
+          // Il permesso di Google dura un'ora: se scade durante un video lungo, lo rinnova e riparte dallo stesso punto.
+          if (source.mode === 'direct' && retries.current < 2) {
+            retries.current += 1;
+            resumeAt.current = el?.currentTime > 0 ? el.currentTime : null;
+            setLoading(true);
+            loadSource(true);
+            return;
+          }
           setLoading(false);
           setError({ title: 'Controllo in corso…', text: 'Sto cercando di capire perché il video non parte.', details: [] });
           diagnose();

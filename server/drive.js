@@ -1,5 +1,5 @@
 import { Readable } from 'node:stream';
-import { getAccessToken, serviceAccountEmail } from './google-auth.js';
+import { accessTokenExpiry, getAccessToken, serviceAccountEmail } from './google-auth.js';
 
 const API_KEY = () => process.env.GOOGLE_API_KEY;
 const API = 'https://www.googleapis.com/drive/v3/files';
@@ -117,11 +117,38 @@ function boundedRange(header) {
   return `bytes=${start}-${end}`;
 }
 
-/** Inoltra il video da Google Drive al browser, a pezzi, supportando le richieste "Range". */
-export async function streamDriveFile(req, res, fileId) {
+/**
+ * Indirizzo con cui il BROWSER scarica il video direttamente da Google,
+ * senza passare dal server (che così non consuma traffico).
+ * Con l'account di servizio include un permesso temporaneo (1 ora, sola lettura).
+ */
+export async function directVideoUrl(fileId, { fresh = false } = {}) {
+  const base = `${API}/${fileId}?alt=media&supportsAllDrives=true&acknowledgeAbuse=true`;
+  const token = await getAccessToken(fresh ? Infinity : 40 * 60 * 1000).catch((err) => {
+    console.error(`✖ ${err.message}`);
+    return null;
+  });
+  if (token) return { url: `${base}&access_token=${encodeURIComponent(token)}`, expiresAt: accessTokenExpiry() };
+  if (API_KEY()) return { url: `${base}&key=${API_KEY()}`, expiresAt: null };
+  return {
+    url: `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`,
+    expiresAt: null,
+  };
+}
+
+/**
+ * Inoltra il video da Google Drive al browser, a pezzi, supportando le richieste "Range".
+ * `maxBytes` limita la dimensione di ogni risposta (usato in modalità diretta, dove il
+ * passaggio dal server serve solo per piccoli controlli).
+ */
+export async function streamDriveFile(req, res, fileId, { maxBytes } = {}) {
   const controller = new AbortController();
   res.on('close', () => controller.abort());
-  const range = boundedRange(req.headers.range);
+  let range = boundedRange(req.headers.range);
+  if (maxBytes) {
+    const m = /^bytes=(\d+)-(\d+)$/.exec(range);
+    if (m && Number(m[2]) - Number(m[1]) + 1 > maxBytes) range = `bytes=${m[1]}-${Number(m[1]) + maxBytes - 1}`;
+  }
 
   const failures = [];
   for (const source of await mediaSources(fileId)) {

@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import { createAuth } from './auth.js';
 import { createCatalog } from './storage.js';
 import { probeDriveVideo } from './probe.js';
-import { describeAccessMode, extractDriveId, forgetCover, getDriveCover, getDriveMetadata, streamDriveFile } from './drive.js';
+import { describeAccessMode, directVideoUrl, extractDriveId, forgetCover, getDriveCover, getDriveMetadata, streamDriveFile } from './drive.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT) || 3001;
@@ -22,6 +22,11 @@ if (!process.env.SESSION_SECRET) {
   console.warn('⚠ SESSION_SECRET non impostata: ne uso una derivata dalla password (consigliato impostarla).');
 }
 console.log(`Accesso a Google Drive: ${describeAccessMode()}`);
+
+// "direct" (consigliato): il browser scarica il video direttamente da Google e il server non consuma traffico.
+// "proxy": il video passa dal server (consuma la banda di Render: usalo solo se "direct" non funziona).
+const STREAM_MODE = process.env.STREAM_MODE === 'proxy' ? 'proxy' : 'direct';
+console.log(`Riproduzione video: ${STREAM_MODE === 'direct' ? 'diretta da Google (nessun traffico sul server)' : 'tramite il server'}`);
 
 const auth = createAuth({ password: PASSWORD, secret: process.env.SESSION_SECRET || `archivio:${PASSWORD}` });
 const catalog = await createCatalog({ rootDir });
@@ -165,11 +170,23 @@ app.delete(
 );
 
 app.get(
+  '/api/videos/:id/source',
+  asyncRoute(async (req, res) => {
+    const video = catalog.get(req.params.id);
+    if (!video) return res.status(404).json({ error: 'Video non trovato' });
+    res.setHeader('Cache-Control', 'no-store');
+    if (STREAM_MODE === 'proxy') return res.json({ mode: 'proxy', url: `/api/videos/${video.id}/stream` });
+    res.json({ mode: 'direct', ...(await directVideoUrl(video.driveId, { fresh: req.query.fresh === '1' })) });
+  })
+);
+
+app.get(
   '/api/videos/:id/stream',
   asyncRoute(async (req, res) => {
     const video = catalog.get(req.params.id);
     if (!video) return res.status(404).json({ error: 'Video non trovato' });
-    await streamDriveFile(req, res, video.driveId);
+    // In modalità diretta il server serve solo piccoli pezzi per i controlli di diagnosi.
+    await streamDriveFile(req, res, video.driveId, STREAM_MODE === 'direct' ? { maxBytes: 64 * 1024 } : {});
   })
 );
 

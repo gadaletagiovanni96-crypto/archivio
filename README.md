@@ -6,7 +6,7 @@ Funziona su telefono, tablet e computer.
 - Accesso con **una sola password** di famiglia
 - Pulsante **“Aggiungi video”** con titolo, anno, link di Google Drive (più descrizione e copertina facoltative)
 - **Copertine** automatiche prese dall'anteprima di Google Drive (oppure un'immagine a scelta)
-- Riproduzione **dentro il sito** con un player proprio (il server fa da “ponte” verso Drive, quindi si può anche saltare avanti/indietro)
+- Riproduzione **dentro il sito** con un player proprio: il video arriva direttamente da Google al browser (nessun traffico sul server), con avanti/indietro
 - Righe per anno, “Aggiunti di recente”, **“Continua a guardare”** (riprende da dove avevi lasciato), ricerca
 - Modifica ed eliminazione dei video (il file su Drive non viene mai toccato)
 
@@ -121,7 +121,7 @@ In alternativa puoi usare **New → Blueprint**: il file `render.yaml` incluso c
 
 **Da sapere sul piano gratuito**
 - Dopo ~15 minuti senza visite il server “si addormenta”: la prima apertura può richiedere ~30–60 secondi.
-- Il traffico dei video passa dal server: il piano gratuito include una quota mensile di banda in uscita, più che sufficiente per un uso familiare normale. Se la superate, Render vi avvisa.
+- I video **non passano dal server**: il browser li scarica direttamente da Google con un permesso temporaneo fornito dal server. Il piano gratuito di Render include solo 5 GB di traffico al mese, che così bastano per pagine e copertine.
 - Ogni `git push` sul ramo collegato ripubblica automaticamente il sito.
 
 **Sul telefono** puoi aggiungere il sito alla schermata Home (Safari: Condividi → “Aggiungi alla schermata Home”; Chrome: menu ⋮ → “Aggiungi a schermata Home”) per aprirlo come un'app.

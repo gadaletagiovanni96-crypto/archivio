@@ -108,13 +108,21 @@ async function requestToken(creds) {
   return token.value;
 }
 
-/** Restituisce un token di accesso valido, o null se l'account di servizio non è configurato. */
-export async function getAccessToken() {
+/**
+ * Restituisce un token di accesso valido per almeno `minValidityMs`,
+ * o null se l'account di servizio non è configurato.
+ */
+export async function getAccessToken(minValidityMs = 120_000) {
   const creds = loadCredentials();
   if (!creds) return null;
-  if (token.value && Date.now() < token.expires - 120_000) return token.value;
+  if (token.value && Date.now() < token.expires - minValidityMs) return token.value;
   tokenPromise ??= requestToken(creds).finally(() => {
     tokenPromise = null;
   });
   return tokenPromise;
+}
+
+/** Scadenza (timestamp) del token attuale. */
+export function accessTokenExpiry() {
+  return token.expires;
 }
